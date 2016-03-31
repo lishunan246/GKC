@@ -19,7 +19,7 @@ This file contains functions.
 #define __COMPILE_SINGLE_FILE_H__
 ////////////////////////////////////////////////////////////////////////////////
 
-#include "../analyzer/SourceAnalyzer.h"
+#include "../process/SourceAnalyzer.h"
 
 ////////////////////////////////////////////////////////////////////////////////
 namespace GKC {
@@ -30,8 +30,13 @@ inline int compile_single_file(const StringS& strSrc, const StringS& strDest)
 	CallResult cr;
 	SourceAnalyzer sa;
 
+	ConsoleHelper::WriteLine(DECLARE_TEMP_CONST_STRING(ConstStringS, _S("Initialize...")));
 	//init
 	cr = sa.Initialize(StringUtilHelper::To_ConstString(strSrc));
+	if( cr.IsFailed() ) {
+		ConsoleHelper::WriteLine(DECLARE_TEMP_CONST_STRING(ConstStringS, _S("Failed!")));
+		return 0;
+	}
 
 	return 0;
 }

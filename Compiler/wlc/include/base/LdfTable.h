@@ -21,6 +21,8 @@ This file contains classes for Tables of Language Definition File.
 
 #include "parser.h"
 
+#include "_ldf_base.h"
+
 ////////////////////////////////////////////////////////////////////////////////
 namespace GKC {
 ////////////////////////////////////////////////////////////////////////////////
@@ -55,9 +57,9 @@ public:
 		uint uBytes, uBytes1, uBytes2;
 		uBytes1 = SafeOperators::MultiplyThrow((uint)iMaxState + 1, (uint)sizeof(FSA_STATE_ITEM));  //may throw
 		uBytes2 = SafeOperators::MultiplyThrow((uint)iMaxMatch + 1, (uint)sizeof(FSA_MATCH_ITEM));  //may throw
-		uBytes = SafeOperators::AddThrow(uBytes1, uBytes2);  //may throw
+		uBytes  = SafeOperators::AddThrow(uBytes1, uBytes2);  //may throw
 		uBytes1 = SafeOperators::MultiplyThrow((uint)total_transition_num, (uint)sizeof(FSA_TRANSITION_ITEM));  //may throw
-		uBytes = SafeOperators::AddThrow(uBytes, uBytes1);  //may throw
+		uBytes  = SafeOperators::AddThrow(uBytes, uBytes1);  //may throw
 		uint uStart = m_alloc.Allocate(uBytes);  //may throw
 		//pointers
 		m_pState = (FSA_STATE_ITEM*)m_alloc.ToPtr(uStart);
@@ -78,7 +80,7 @@ public:
 	//set state
 	void SetState(int iState, int iDefaultState, int iMatchIndex) throw()
 	{
-		assert( iState > 0 );
+		assert( iState > 0 && iState <= m_iMaxState );
 		assert( m_pState != NULL );
 		m_pState[iState].iDefaultState = iDefaultState;
 		m_pState[iState].iMatchIndex = iMatchIndex;
@@ -86,7 +88,7 @@ public:
 	//set match table
 	void SetMatch(int iMatchIndex, int iMatch) throw()
 	{
-		assert( iMatchIndex > 0 );
+		assert( iMatchIndex > 0 && iMatchIndex <= m_iMaxMatch );
 		assert( m_pMatch != NULL );
 		m_pMatch[iMatchIndex].iMatch = iMatch;
 	}
@@ -114,314 +116,180 @@ private:
 	//noncopyable
 };
 
-// LdfTableHelper
+// PdaTableInPool
+//   PDA tables are defined in a pool
 
-class LdfTableHelper
+class PdaTableInPool
 {
-private:
-	//FSA for lex & grammar file
-	class _LDF_FsaTraits
-	{
-	public:
-		// state map
-		BEGIN_FSA_TRAITS_STATE_MAP(_LDF_FsaTraits)
-			//transitions
-			BEGIN_STATE_TRANSITION(FSA_STATE_START)
-				STATE_TRANSITION_ENTRY('/', 2)
-				STATE_TRANSITION_ENTRY(' ', 4)
-				STATE_TRANSITION_ENTRY('\t', 4)
-				STATE_TRANSITION_ENTRY('\r', 5)
-				STATE_TRANSITION_ENTRY('\n', 7)
-				STATE_TRANSITION_ENTRY('%', 8)
-				STATE_TRANSITION_ENTRY('{', 10)
-				STATE_TRANSITION_ENTRY('}', 11)
-				STATE_TRANSITION_ENTRY('T', 12)
-				STATE_TRANSITION_ENTRY('d', 16)
-				STATE_TRANSITION_RANGE_ENTRY('a', 'c', 17)
-				STATE_TRANSITION_RANGE_ENTRY('e', 'z', 17)
-				STATE_TRANSITION_ENTRY(':', 21)
-				STATE_TRANSITION_ENTRY('|', 22)
-				STATE_TRANSITION_ENTRY(';', 23)
-			END_STATE_TRANSITION()
-			BEGIN_STATE_TRANSITION(2)
-				STATE_TRANSITION_ENTRY('*', 3)
-			END_STATE_TRANSITION()
-			BEGIN_STATE_TRANSITION(3)
-			END_STATE_TRANSITION()
-			BEGIN_STATE_TRANSITION(4)
-				STATE_TRANSITION_ENTRY(' ', 4)
-				STATE_TRANSITION_ENTRY('\t', 4)
-			END_STATE_TRANSITION()
-			BEGIN_STATE_TRANSITION(5)
-				STATE_TRANSITION_ENTRY('\n', 6)
-			END_STATE_TRANSITION()
-			BEGIN_STATE_TRANSITION(6)
-			END_STATE_TRANSITION()
-			BEGIN_STATE_TRANSITION(7)
-			END_STATE_TRANSITION()
-			BEGIN_STATE_TRANSITION(8)
-				STATE_TRANSITION_ENTRY('%', 9)
-			END_STATE_TRANSITION()
-			BEGIN_STATE_TRANSITION(9)
-			END_STATE_TRANSITION()
-			BEGIN_STATE_TRANSITION(10)
-			END_STATE_TRANSITION()
-			BEGIN_STATE_TRANSITION(11)
-			END_STATE_TRANSITION()
-			BEGIN_STATE_TRANSITION(12)
-				STATE_TRANSITION_ENTRY('K', 13)
-			END_STATE_TRANSITION()
-			BEGIN_STATE_TRANSITION(13)
-				STATE_TRANSITION_ENTRY('_', 14)
-			END_STATE_TRANSITION()
-			BEGIN_STATE_TRANSITION(14)
-				STATE_TRANSITION_RANGE_ENTRY('A', 'Z', 15)
-			END_STATE_TRANSITION()
-			BEGIN_STATE_TRANSITION(15)
-				STATE_TRANSITION_RANGE_ENTRY('A', 'Z', 15)
-				STATE_TRANSITION_RANGE_ENTRY('0', '9', 15)
-				STATE_TRANSITION_ENTRY('_', 15)
-			END_STATE_TRANSITION()
-			BEGIN_STATE_TRANSITION(16)
-				STATE_TRANSITION_RANGE_ENTRY('a', 'n', 17)
-				STATE_TRANSITION_RANGE_ENTRY('p', 'z', 17)
-				STATE_TRANSITION_RANGE_ENTRY('0', '9', 17)
-				STATE_TRANSITION_ENTRY('_', 17)
-				STATE_TRANSITION_ENTRY('o', 18)
-			END_STATE_TRANSITION()
-			BEGIN_STATE_TRANSITION(17)
-				STATE_TRANSITION_RANGE_ENTRY('a', 'z', 17)
-				STATE_TRANSITION_RANGE_ENTRY('0', '9', 17)
-				STATE_TRANSITION_ENTRY('_', 17)
-			END_STATE_TRANSITION()
-			BEGIN_STATE_TRANSITION(18)
-				STATE_TRANSITION_RANGE_ENTRY('a', 'z', 17)
-				STATE_TRANSITION_RANGE_ENTRY('0', '9', 17)
-				STATE_TRANSITION_ENTRY('_', 19)
-			END_STATE_TRANSITION()
-			BEGIN_STATE_TRANSITION(19)
-				STATE_TRANSITION_RANGE_ENTRY('a', 'z', 20)
-				STATE_TRANSITION_RANGE_ENTRY('0', '9', 17)
-				STATE_TRANSITION_ENTRY('_', 17)
-			END_STATE_TRANSITION()
-			BEGIN_STATE_TRANSITION(20)
-				STATE_TRANSITION_RANGE_ENTRY('a', 'z', 20)
-				STATE_TRANSITION_RANGE_ENTRY('0', '9', 20)
-				STATE_TRANSITION_ENTRY('_', 20)
-			END_STATE_TRANSITION()
-			BEGIN_STATE_TRANSITION(21)
-			END_STATE_TRANSITION()
-			BEGIN_STATE_TRANSITION(22)
-			END_STATE_TRANSITION()
-			BEGIN_STATE_TRANSITION(23)
-			END_STATE_TRANSITION()
-
-			//state
-			BEGIN_STATE_SET()
-				STATE_SET_ENTRY(FSA_STATE_STOP, FSA_STATE_START, 100)
-				STATE_SET_ENTRY(FSA_STATE_STOP, 2, 100)
-				STATE_SET_ENTRY(FSA_STATE_STOP, 3, -1)
-				STATE_SET_ENTRY(FSA_STATE_STOP, 4, -2)
-				STATE_SET_ENTRY(FSA_STATE_STOP, 5, -3)
-				STATE_SET_ENTRY(FSA_STATE_STOP, 6, -3)
-				STATE_SET_ENTRY(FSA_STATE_STOP, 7, -3)
-				STATE_SET_ENTRY(FSA_STATE_STOP, 8, 100)
-				STATE_SET_ENTRY(FSA_STATE_STOP, 9, -4)
-				STATE_SET_ENTRY(FSA_STATE_STOP, 10, -8)
-				STATE_SET_ENTRY(FSA_STATE_STOP, 11, -9)
-				STATE_SET_ENTRY(FSA_STATE_STOP, 12, 100)
-				STATE_SET_ENTRY(FSA_STATE_STOP, 13, 100)
-				STATE_SET_ENTRY(FSA_STATE_STOP, 14, 100)
-				STATE_SET_ENTRY(FSA_STATE_STOP, 15, -7)
-				STATE_SET_ENTRY(FSA_STATE_STOP, 16, -6)
-				STATE_SET_ENTRY(FSA_STATE_STOP, 17, -6)
-				STATE_SET_ENTRY(FSA_STATE_STOP, 18, -6)
-				STATE_SET_ENTRY(FSA_STATE_STOP, 19, -6)
-				STATE_SET_ENTRY(FSA_STATE_STOP, 20, -5)
-				STATE_SET_ENTRY(FSA_STATE_STOP, 21, -10)
-				STATE_SET_ENTRY(FSA_STATE_STOP, 22, -11)
-				STATE_SET_ENTRY(FSA_STATE_STOP, 23, -12)
-			END_STATE_SET()
-		END_FSA_TRAITS_STATE_MAP()
-
-		// match map
-		BEGIN_FSA_TRAITS_MATCH_MAP(_LDF_FsaTraits)
-			STATE_MATCH_ENTRY(0)
-			STATE_MATCH_ENTRY(1)   //TK_COMMENT_START
-			STATE_MATCH_ENTRY(2)   //TK_SPACE
-			STATE_MATCH_ENTRY(3)   //TK_RETURN
-			STATE_MATCH_ENTRY(4)   //TK_SEP
-			STATE_MATCH_ENTRY(5)   //TK_ACTION
-			STATE_MATCH_ENTRY(6)   //TK_MACRO
-			STATE_MATCH_ENTRY(7)   //TK_TOKEN
-			STATE_MATCH_ENTRY(8)   //TK_LCURLY
-			STATE_MATCH_ENTRY(9)   //TK_RCURLY
-			STATE_MATCH_ENTRY(10)  //TK_COLON
-			STATE_MATCH_ENTRY(11)  //TK_VERT
-			STATE_MATCH_ENTRY(12)  //TK_SEMI
-		END_FSA_TRAITS_MATCH_MAP()
-	};
-
-	class _LDF_TokenTable
-	{
-	public:
-		//called only once
-		void Init()
-		{
-			uint uID = TK_FIRST;
-			m_table.InsertToken(DECLARE_TEMP_CONST_STRING(ConstStringA, "TK_COMMENT_START"), uID ++);
-			m_table.InsertToken(DECLARE_TEMP_CONST_STRING(ConstStringA, "TK_SPACE"), uID ++);
-			m_table.InsertToken(DECLARE_TEMP_CONST_STRING(ConstStringA, "TK_RETURN"), uID ++);
-			m_table.InsertToken(DECLARE_TEMP_CONST_STRING(ConstStringA, "TK_SEP"), uID ++);
-			m_table.InsertToken(DECLARE_TEMP_CONST_STRING(ConstStringA, "TK_ACTION"), uID ++);
-			m_table.InsertToken(DECLARE_TEMP_CONST_STRING(ConstStringA, "TK_MACRO"), uID ++);
-			m_table.InsertToken(DECLARE_TEMP_CONST_STRING(ConstStringA, "TK_TOKEN"), uID ++);
-			m_table.InsertToken(DECLARE_TEMP_CONST_STRING(ConstStringA, "TK_LCURLY"), uID ++);
-			m_table.InsertToken(DECLARE_TEMP_CONST_STRING(ConstStringA, "TK_RCURLY"), uID ++);
-			m_table.InsertToken(DECLARE_TEMP_CONST_STRING(ConstStringA, "TK_COLON"), uID ++);
-			m_table.InsertToken(DECLARE_TEMP_CONST_STRING(ConstStringA, "TK_VERT"), uID ++);
-			m_table.InsertToken(DECLARE_TEMP_CONST_STRING(ConstStringA, "TK_SEMI"), uID ++);
-		}
-
-		const TokenTable& GetTable() const throw()
-		{
-			return m_table;
-		}
-
-	private:
-		TokenTable m_table;
-	};
-
-	// actions
-	class MacroTokenAction : public ILexerAction
-	{
-	public:
-		virtual void DoAction(INOUT RefPtr<ICharStream>& stream, INOUT LexerTokenInfo& info)
-		{
-			//receive the regular expression
-			info.GetData().SetLength(0);
-			CallResult cr;
-			byte ch;
-			//next char
-			cr = _get_next_char(stream, ch);
-			if( cr.IsFailed() )
-				return ;
-			//skip blanks
-			while( ch == ' ' || ch == '\t' ) {
-				(info.GetCharEnd().uCharIndex) ++;
-				(info.GetCharEnd().uCol) ++;
-				//next char
-				cr = _get_next_char(stream, ch);
-				if( cr.IsFailed() )
-					return ;
-			}
-			//regex
-			while( ch != ' ' && ch != '\t' && ch != '\r' && ch != '\n' ) {
-				(info.GetCharEnd().uCharIndex) ++;
-				(info.GetCharEnd().uCol) ++;
-				StringUtilHelper::Append((CharA)ch, info.GetData());  //may throw
-				//next char
-				cr = _get_next_char(stream, ch);
-				if( cr.IsFailed() )
-					return ;
-			}
-			//back char
-			cr = stream.Deref().UngetChar(1);
-			assert( cr.IsOK() );
-		}
-
-	private:
-		static CallResult _get_next_char(RefPtr<ICharStream>& stream, byte& ch) throw()
-		{
-			CallResult cr;
-			cr = stream.Deref().GetChar(ch);
-			if( cr.GetResult() == SystemCallResults::S_EOF )
-				cr.SetResult(SystemCallResults::Fail);
-			if( cr.IsFailed() )
-				return cr;
-			return cr;
-		}
-	};
-
 public:
-	//process lex file
-	static CallResult ProcessLexFile(IN const ConstStringS& strFile, OUT TokenTable& table, OUT FsaTableInPool& fsa, OUT CplErrorBuffer& errorBuffer)
+	PdaTableInPool() throw() : m_pState(NULL), m_iMaxState(0), m_pRule(NULL), m_iMaxRule(0)
+	{
+	}
+	~PdaTableInPool() throw()
+	{
+	}
+
+	//state: 2---iMaxState
+	//transition: the count of arrTransitionNum is iMaxState + 1
+	//rule: 0---iMaxRule
+	void Allocate(int iMaxState, const int* arrTransitionNum, int iMaxRule)
+	{
+		assert( iMaxState > 2 && iMaxRule > 0 );
+		assert( m_pState == NULL && m_pRule == NULL );
+		//transition number
+		int total_transition_num = 0;
+		for( int i = 2; i <= iMaxState; i ++ ) {
+			assert( arrTransitionNum[i] > 0 );
+			total_transition_num += arrTransitionNum[i];
+		}
+		//allocate
+		uint uBytes, uBytes1, uBytes2;
+		uBytes1 = SafeOperators::MultiplyThrow((uint)iMaxState + 1, (uint)sizeof(PDA_STATE_ITEM));  //may throw
+		uBytes2 = SafeOperators::MultiplyThrow((uint)iMaxRule + 1, (uint)sizeof(PDA_RULE_ITEM));  //may throw
+		uBytes  = SafeOperators::AddThrow(uBytes1, uBytes2);  //may throw
+		uBytes1 = SafeOperators::MultiplyThrow((uint)total_transition_num, (uint)sizeof(PDA_TRANSITION_ITEM));  //may throw
+		uBytes  = SafeOperators::AddThrow(uBytes, uBytes1);  //may throw
+		uint uStart = m_alloc.Allocate(uBytes);  //may throw
+		//pointers
+		m_pState = (PDA_STATE_ITEM*)m_alloc.ToPtr(uStart);
+		m_pState[0].iDefaultState = 0;
+		m_pState[0].pTransition = NULL;
+		m_pState[1].iDefaultState = 0;
+		m_pState[1].pTransition = NULL;
+		m_pRule = (PDA_RULE_ITEM*)((byte*)m_pState + sizeof(PDA_STATE_ITEM) * (iMaxState + 1));
+		m_pRule[0].uLeftEventNo = 0;
+		m_pRule[0].uRightSymbolNumber = 0;
+		PDA_TRANSITION_ITEM* pItem = (PDA_TRANSITION_ITEM*)((byte*)m_pRule + sizeof(PDA_RULE_ITEM) * (iMaxRule + 1));
+		for( int i = 2; i <= iMaxState; i ++ ) {
+			m_pState[i].pTransition = pItem;
+			pItem += arrTransitionNum[i];
+		}
+		//parameters
+		m_iMaxState = iMaxState;
+		m_iMaxRule  = iMaxRule;
+	}
+
+	//set state
+	void SetState(int iState, int iDefaultState) throw()
+	{
+		assert( iState > 1 && iState <= m_iMaxState );
+		assert( m_pState != NULL );
+		m_pState[iState].iDefaultState = iDefaultState;
+	}
+	//set rule
+	void SetRule(int iRule, uint uLeftEventNo, uint uRightSymbolNumber) throw()
+	{
+		assert( iRule > 0 && iRule <= m_iMaxRule );
+		assert( m_pRule != NULL );
+		m_pRule[iRule].uLeftEventNo = uLeftEventNo;
+		m_pRule[iRule].uRightSymbolNumber = uRightSymbolNumber;
+	}
+
+	const PDA_STATE_ITEM* GetStateTable(int& iMaxStateNo) const throw()
+	{
+		iMaxStateNo = m_iMaxState;
+		return m_pState;
+	}
+	const PDA_RULE_ITEM* GetRuleTable(int& iMaxRuleNo) const throw()
+	{
+		iMaxRuleNo = m_iMaxRule;
+		return m_pRule;
+	}
+
+private:
+	DataPoolAllocator m_alloc;  //pool
+	//tables
+	PDA_STATE_ITEM* m_pState;
+	int m_iMaxState;
+	PDA_RULE_ITEM*  m_pRule;
+	int m_iMaxRule;
+
+private:
+	//noncopyable
+};
+
+// LdfTableAnalyzer
+
+class LdfTableAnalyzer
+{
+public:
+	LdfTableAnalyzer() throw()
+	{
+	}
+	~LdfTableAnalyzer() throw()
+	{
+	}
+
+	//called only once
+	void Init()
+	{
+		m_lexer.Init();
+
+	}
+
+	CallResult Process(IN const ConstStringS& strLexFile, IN const ConstStringS& strGraFile,
+					OUT TokenTable& tokenTable, OUT FsaTableInPool& fsa,
+					OUT TokenTable& actionTable, OUT PdaTableInPool& pda
+					)
+	{
+		CallResult cr;
+
+		cr = process_lex_file(strLexFile, tokenTable, fsa);
+		if( cr.IsFailed() )
+			return cr;
+
+		return cr;
+	}
+
+private:
+	CallResult process_lex_file(IN const ConstStringS& strLexFile, OUT TokenTable& tokenTable, OUT FsaTableInPool& fsa)
 	{
 		CallResult cr;
 
 		//stream
 		FileCharStream stream;
-		cr = stream.Initialize(StringUtilHelper::To_C_Style(strFile));
+		cr = stream.Initialize(StringUtilHelper::To_C_Style(strLexFile));
 		if( cr.IsFailed() )
 			return cr;
 
-		//token table
-		_LDF_TokenTable ldfTokenTable;
-		ldfTokenTable.Init();  //may throw
-		//FSA
-		FiniteStateMachineT<_LDF_FsaTraits> fsm;
-		//lexer table
-		LexerTable lexTable(RefPtrHelper::TypeCast<FiniteStateMachineT<_LDF_FsaTraits>, FiniteStateAutomata>(RefPtr<FiniteStateMachineT<_LDF_FsaTraits>>(fsm)),
-							RefPtrHelper::ToRefPtr(ldfTokenTable.GetTable()));
 		//lexer parser
-		LexerParser lexParser;
-		lexParser.SetLexerTable(RefPtrHelper::ToRefPtr(lexTable));
-		lexParser.SetStream(RefPtrHelper::TypeCast<FileCharStream, ICharStream>(RefPtr<FileCharStream>(stream)));
-		//actions
-		CommentStartAction actionCommentStart;
-		SpaceAction actionSpace;
-		ReturnAction actionReturn;
-		MacroTokenAction actionMacroToken;
-		lexParser.SetAction(DECLARE_TEMP_CONST_STRING(ConstStringA, "TK_COMMENT_START"),
-							RefPtrHelper::TypeCast<CommentStartAction, ILexerAction>(RefPtr<CommentStartAction>(actionCommentStart)));
-		lexParser.SetAction(DECLARE_TEMP_CONST_STRING(ConstStringA, "TK_SPACE"),
-							RefPtrHelper::TypeCast<SpaceAction, ILexerAction>(RefPtr<SpaceAction>(actionSpace)));
-		lexParser.SetAction(DECLARE_TEMP_CONST_STRING(ConstStringA, "TK_RETURN"),
-							RefPtrHelper::TypeCast<ReturnAction, ILexerAction>(RefPtr<ReturnAction>(actionReturn)));
-		lexParser.SetAction(DECLARE_TEMP_CONST_STRING(ConstStringA, "TK_MACRO"),
-							RefPtrHelper::TypeCast<MacroTokenAction, ILexerAction>(RefPtr<MacroTokenAction>(actionMacroToken)));
-		lexParser.SetAction(DECLARE_TEMP_CONST_STRING(ConstStringA, "TK_TOKEN"),
-							RefPtrHelper::TypeCast<MacroTokenAction, ILexerAction>(RefPtr<MacroTokenAction>(actionMacroToken)));
+		m_lexer.SetStream(RefPtrHelper::TypeCast<FileCharStream, ICharStream>(RefPtr<FileCharStream>(stream)));
 
-		LexerTokenInfo tokenInfo;
-		//loop
-		lexParser.Start(tokenInfo);
-		do {
-			cr = lexParser.Parse(tokenInfo);
-			if( cr.IsFailed() ) {
-				errorBuffer = tokenInfo.GetErrorString();
-				break;
-			}
-			uint uTokenID;
-			if( cr.GetResult() == SystemCallResults::S_False ) {
-				cr.SetResult(SystemCallResults::OK);
-				uTokenID = TK_EOF;
-			}
-			else {
-				uTokenID = tokenInfo.GetID();
-			}
-			if( uTokenID == TK_ERROR ) {
-				int ret = value_to_string(FixedArrayHelper::GetInternalPointer(errorBuffer), CplErrorBuffer::c_size,
-										_S("Error token(%u, %u): %s"), tokenInfo.GetCharStart().uRow + 1, tokenInfo.GetCharStart().uCol + 1, SharedArrayHelper::GetInternalPointer(tokenInfo.GetBuffer()));
-				if( ret >= 0 )
-					errorBuffer.SetLength(ret);
-				//add to error string list
-			}
-			else if( uTokenID == TK_EOF ) {
-				//check error
-				break;
-			}
-			else if( uTokenID == TK_NULL ) {
-				//skip
-				continue;
-			}
-			//uint uPdaEvent = (uTokenID == TK_EOF) ? PDA_END_OF_EVENT : uTokenID;
+		//grammar parser
+		_ldf_helper::_LDF_lex_GrammarParser parser;
+		parser.SetLexerParser(m_lexer.GetLexerParser());
+		// grammar table
+		_ldf_helper::_LDF_lex_GrammarTable graTable;
+		graTable.Init();
+		parser.SetGrammarTable(graTable.GetGrammarTable());
+		// data
+		_ldf_helper::_LDF_lex_GrammarData data(tokenTable);
+		// action
+		_ldf_helper::_LDF_lex_GrammarAction action(data);
+		action.Apply(parser.GetGrammarParser());
 
+		//execute
+		cr = parser.Execute();
+		if( cr.IsFailed() )
+			return cr;
 
-		} while( true );
+		//expand macros
+		data.ExpandTokenMacros();
 
+		//analyze regular expressions
+		SharedArray<StringA>& regex(data.GetTokenRegex());
+		_ldf_helper::_LDF_regex_AST ast;
+		cr = ast.Generate(regex);
+		if( cr.IsFailed() )
+			return cr;
+
+		cr.SetResult(SystemCallResults::OK);
 		return cr;
 	}
+
+private:
+	//lexer parser
+	_ldf_helper::_LDF_LexerParser m_lexer;
 };
 
 ////////////////////////////////////////////////////////////////////////////////

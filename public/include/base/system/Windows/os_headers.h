@@ -24,4 +24,11 @@
 #include <ole2.h>
 #include <Shellapi.h>
 
+#include <Shlwapi.h>
+#pragma comment(lib, "Shlwapi.lib")
+
+//CRT
+
+#include <stdlib.h>
+
 ////////////////////////////////////////////////////////////////////////////////
