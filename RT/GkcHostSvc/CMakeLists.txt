@@ -9,6 +9,8 @@
 #   yxxinyuan@zju.edu.cn
 #
 
+find_package(Threads REQUIRED)
+
 INCLUDE_DIRECTORIES(
 	"${CMAKE_CURRENT_BINARY_DIR}"
 	"${CMAKE_CURRENT_SOURCE_DIR}"
@@ -20,12 +22,13 @@ SET(EXECUTABLE_OUTPUT_PATH "${PROJECT_BINARY_DIR}/bin")
 SET(SRC_PCH_LIST "src/precomp.cpp")
 SET(SRC_LIST "src/main.cpp")
 ADD_EXECUTABLE(GkcHostSvc ${SRC_PCH_LIST} ${SRC_LIST})
+add_executable(GkcHostSvcClient src/HostSvcClient.cpp)
 SET_PCH(GkcHostSvc "exe" "precomp.h" ${SRC_PCH_LIST} ${SRC_LIST})
 SET_TARGET_SUBSYSTEM("Background")
 SET_TARGET_PROPERTIES(GkcHostSvc PROPERTIES OUTPUT_NAME "GkcHostSvc-1-0"
 	LINK_FLAGS "${STRING_LINK_FLAGS_TARGET}")
 TARGET_LINK_LIBRARIES(GkcHostSvc GkcSys ${STRING_LINK_EXTRA_LIBS})
-
+target_link_libraries(GkcHostSvcClient ${CMAKE_THREAD_LIBS_INIT})
 #copy
 SET_POSTBUILD_PATH_COPY(GkcHostSvc "platform" "machine" "config" "${PROJECT_SOURCE_DIR}/RT/GkcHostSvc/setup" "*" "${EXECUTABLE_OUTPUT_PATH}")
 
@@ -36,3 +39,6 @@ INSTALL(DIRECTORY "${POSTBUILD_SRC_PATH}/"
 	DESTINATION public/assemblies COMPONENT runtime)
 
 #end
+
+#client
+
