@@ -36,6 +36,8 @@ namespace GkcHostSvc {
         Client(asio::io_service &io_service) : socket(io_service) {
 
         }
+		Client(const Client&) = delete;
+		Client& operator=(const Client) = delete;
 
         static pClient create(asio::io_service &io_service) {
             return std::make_shared<Client>(io_service);
@@ -63,6 +65,8 @@ namespace GkcHostSvc {
     public:
         ClientManager(asio::io_service &io_service) : acceptor(io_service, tcp::endpoint(tcp::v4(), PORT_INT)) {
         }
+		ClientManager(const ClientManager&) = delete;
+		ClientManager& operator=(const ClientManager) = delete;
 
         void start_accept();
 
