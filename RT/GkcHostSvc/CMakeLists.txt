@@ -29,7 +29,7 @@ SET(SRC_LIST "src/Main.cpp")
 ADD_EXECUTABLE(GkcHostSvc ${SRC_PCH_LIST} ${SRC_LIST})
 
 add_executable(GkcHostSvcClient src/HostSvcClient.cpp)
-SET_PCH(GkcHostSvc "exe" "precomp.h" ${SRC_PCH_LIST} ${SRC_LIST})
+SET_PCH(GkcHostSvc "exe" "PreComp.h" ${SRC_PCH_LIST} ${SRC_LIST})
 
 SET_TARGET_SUBSYSTEM("Background")
 SET_TARGET_PROPERTIES(GkcHostSvc PROPERTIES OUTPUT_NAME "GkcHostSvc"
