@@ -10,6 +10,7 @@
 #define ASIO_HAS_CSTDINT
 #define ASIO_HAS_STD_SHARED_PTR
 #define ASIO_HAS_STD_TYPE_TRAITS
+#define ASIO_NO_TYPEID
 
 #ifdef _MSC_VER
 #pragma comment(linker, "/SUBSYSTEM:CONSOLE")
